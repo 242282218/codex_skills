@@ -1,0 +1,3 @@
+upstream_url: https://github.com/openai/skills/tree/main/skills/.system/skill-installer
+last_synced: 2026-02-26
+notes: "翻译了 frontmatter 中的 description 和 short-description。底层代码保持了原版英文。"
