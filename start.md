@@ -1,3 +1,9 @@
+# 在目标项目根目录执行
+if (Test-Path .codex) { Rename-Item .codex ".codex.bak_$(Get-Date -Format yyyyMMddHHmmss)" }
+New-Item -ItemType Junction -Path .codex -Target "$env:USERPROFILE\.codex"
+
+
+
 请帮我在“当前项目根目录”做 Codex 初次部署。
 
 源仓库：
@@ -30,3 +36,6 @@ https://github.com/242282218/codex_skills
 注意：
 - 不要修改当前项目中 `.codex/` 之外的文件。
 - 全程自动执行，除非遇到无法继续的错误再询问我。
+
+
+
