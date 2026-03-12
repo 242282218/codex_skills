@@ -1,0 +1,92 @@
+{
+  "version": 2,
+  "resolution_order": [
+    {
+      "project_level": "./.codex/skills"
+    },
+    {
+      "user_level": "%USERPROFILE%/.codex/skills"
+    }
+  ],
+  "agent_skill_map": {
+    "A00": [
+      "00_Meta_Dispatcher",
+      "request-analyzer"
+    ],
+    "A01": [
+      "brainstorming",
+      "00_Meta_UniversalDevTeam"
+    ],
+    "A02": [
+      "01_Architect_TechStackSelector",
+      "02_Architect_APIDesign"
+    ],
+    "A03": [
+      "05_Backend_Node",
+      "05_Backend_Python",
+      "fullstack-developer"
+    ],
+    "A04": [
+      "frontend-design",
+      "vercel-react-best-practices",
+      "web-design-guidelines"
+    ],
+    "A05": [
+      "05_Backend_Database"
+    ],
+    "A06": [
+      "test-driven-development",
+      "webapp-testing"
+    ],
+    "A07": [
+      "07_Security_Specialist"
+    ],
+    "A08": [
+      "docker-ci-workflow",
+      "cloudflare-deploy"
+    ],
+    "A09": [
+      "00_Meta_UniversalDevTeam"
+    ],
+    "A10": [
+      "requesting-code-review",
+      "frontend-code-review"
+    ],
+    "A11": [
+      "00_Meta_UniversalDevTeam"
+    ]
+  },
+  "required_invocation_fields": [
+    "trace_id",
+    "agent_id",
+    "skill",
+    "objective",
+    "payload",
+    "constraints",
+    "timeout_seconds",
+    "require_non_interactive"
+  ],
+  "execution_policy": {
+    "deny_unmapped_skill": true,
+    "require_trace_id": true,
+    "require_structured_output": true,
+    "require_non_interactive": true,
+    "require_timeout_budget": true,
+    "max_retries_per_operation": 3,
+    "retry_on_timeout": false,
+    "output_log_required_above_seconds": 10
+  },
+  "timeout_budgets": {
+    "package_install": 120,
+    "compile_build": 180,
+    "unit_test": 90,
+    "e2e_test": 300,
+    "db_migration": 60,
+    "docker_build": 300,
+    "terraform_plan": 120,
+    "terraform_apply": 600,
+    "static_analysis": 90,
+    "port_probe": 30,
+    "seed_data": 60
+  }
+}

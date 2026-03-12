@@ -1,0 +1,79 @@
+version: 2
+resolution_order:
+  - project_level: "./.codex/skills"
+  - user_level: "%USERPROFILE%/.codex/skills"
+
+# RBAC: Only listed skills may be invoked per agent.
+# deny_unmapped_skill: true enforces this at runtime.
+agent_skill_map:
+  A00:
+    - 00_Meta_Dispatcher
+    - request-analyzer
+  A01:
+    - brainstorming
+    - 00_Meta_UniversalDevTeam
+  A02:
+    - 01_Architect_TechStackSelector
+    - 02_Architect_APIDesign
+  A03:
+    - 05_Backend_Node
+    - 05_Backend_Python
+    - fullstack-developer
+  A04:
+    - frontend-design
+    - vercel-react-best-practices
+    - web-design-guidelines
+  A05:
+    - 05_Backend_Database
+  A06:
+    - test-driven-development
+    - webapp-testing
+  A07:
+    - 07_Security_Specialist
+  A08:
+    - docker-ci-workflow
+    - cloudflare-deploy
+  A09:
+    - 00_Meta_UniversalDevTeam
+  A10:
+    - requesting-code-review
+    - frontend-code-review
+  A11:
+    - 00_Meta_UniversalDevTeam
+
+# Fields required in every SkillInvokeRequest payload.
+# These match the SkillInvokeRequest schema in contracts/skill-invoke.schema.json.
+required_invocation_fields:
+  - trace_id
+  - agent_id
+  - skill
+  - objective
+  - payload
+  - constraints
+  - timeout_seconds
+  - require_non_interactive
+
+# Anti-hang execution policy (applied to all agent skill invocations).
+execution_policy:
+  deny_unmapped_skill: true
+  require_trace_id: true
+  require_structured_output: true
+  require_non_interactive: true        # All CLI invocations must include headless flags.
+  require_timeout_budget: true         # timeout_seconds must be explicitly set (never omitted).
+  max_retries_per_operation: 3         # Circuit breaker fires on 3rd failure. Backoff: 2s → 4s → STOP.
+  retry_on_timeout: false              # Timeout failures → immediate circuit breaker, no retry.
+  output_log_required_above_seconds: 10  # Any command expected >10s MUST redirect output to a log file.
+
+# Per-operation timeout budget reference (seconds). Agents MUST use these as upper bounds.
+timeout_budgets:
+  package_install: 120
+  compile_build: 180
+  unit_test: 90
+  e2e_test: 300
+  db_migration: 60
+  docker_build: 300
+  terraform_plan: 120
+  terraform_apply: 600
+  static_analysis: 90
+  port_probe: 30
+  seed_data: 60

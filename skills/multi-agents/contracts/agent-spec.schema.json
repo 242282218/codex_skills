@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codex.local/schemas/agent-spec.schema.json",
+  "title": "AgentSpec",
+  "description": "State-of-the-art JSON Schema for an Agent, incorporating MetaGPT SOPs, CrewAI Role/Backstory, and LangGraph Node definitions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "role",
+    "profile",
+    "backstory",
+    "goal",
+    "sop",
+    "inputs",
+    "outputs",
+    "skills_allowed",
+    "handoff_to",
+    "done_definition"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^A[0-9]{2}$",
+      "description": "Unique identifier (e.g., A00)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Human-readable name of the agent"
+    },
+    "role": {
+      "type": "string",
+      "description": "The specific function this agent fulfills (CrewAI style)"
+    },
+    "profile": {
+      "type": "string",
+      "description": "High-level description of the agent's persona"
+    },
+    "backstory": {
+      "type": "string",
+      "description": "Context about the agent's expertise and behavior (CrewAI style)"
+    },
+    "goal": {
+      "type": "string",
+      "description": "The primary objective or mission of this agent (MetaGPT/CrewAI style)"
+    },
+    "sop": {
+      "type": "array",
+      "description": "Standard Operating Procedure - sequential steps the agent strictly follows (MetaGPT style)",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Required input artifacts (LangGraph state inputs)",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Produced artifacts/state mutations (LangGraph state outputs)",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "skills_allowed": {
+      "type": "array",
+      "description": "List of permissible external tools/skills",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "handoff_to": {
+      "type": "array",
+      "description": "Valid downstream agents representing standard graph edges",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^(A[0-9]{2}|User|End)$"
+      }
+    },
+    "done_definition": {
+      "type": "array",
+      "description": "Acceptance criteria for the agent's tasks terminating",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

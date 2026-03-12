@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/skill-invoke.schema.json",
+  "title": "InvocationContracts",
+  "description": "Typed contracts for all inter-agent communication: SkillInvokeRequest, SkillInvokeResult, and HandoffEnvelope. All payloads MUST carry trace_id for distributed tracing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "payload"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "SkillInvokeRequest",
+        "SkillInvokeResult",
+        "HandoffEnvelope"
+      ]
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SkillInvokeRequest"
+        },
+        {
+          "$ref": "#/$defs/SkillInvokeResult"
+        },
+        {
+          "$ref": "#/$defs/HandoffEnvelope"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "SkillInvokeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id",
+        "agent_id",
+        "skill",
+        "objective",
+        "payload",
+        "constraints",
+        "timeout_seconds",
+        "require_non_interactive"
+      ],
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "pattern": "^TRACE-[A-Z0-9-]+$",
+          "description": "Must match the GlobalState.trace_id for the current execution. Enables distributed tracing."
+        },
+        "agent_id": {
+          "type": "string",
+          "pattern": "^A[0-9]{2}$"
+        },
+        "skill": {
+          "type": "string",
+          "minLength": 2,
+          "description": "Must be a skill listed in mappings/skills-map.yaml for this agent_id. RBAC will deny unmapped skills."
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 5
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Hard constraints the skill implementation must honor (e.g., 'Use non-interactive flags', 'Output must be JSON serializable')."
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600,
+          "description": "REQUIRED. Strict maximum execution time (seconds) for this skill invocation. On breach, the agent must fire circuit breaker and return a failed HandoffEnvelope. Per-category budgets: install=120, build=180, test=300, migrate=60, scan=90, probe=30."
+        },
+        "require_non_interactive": {
+          "type": "boolean",
+          "default": true,
+          "description": "REQUIRED. MUST be true whenever executing CLI tools to prevent Y/N prompt hangs. Only false for pure in-memory or text-generation operations."
+        },
+        "retry_policy": {
+          "type": "object",
+          "description": "Exponential backoff retry configuration. Inspired by LangGraph ToolNode retry policy.",
+          "properties": {
+            "max_attempts": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "default": 3,
+              "description": "Maximum retry attempts including the initial execution. When exhausted, circuit breaker fires."
+            },
+            "backoff_seconds": {
+              "type": "number",
+              "minimum": 1,
+              "default": 2,
+              "description": "Initial wait in seconds before first retry. Doubles on each subsequent attempt (2s → 4s → STOP)."
+            },
+            "retry_on_timeout": {
+              "type": "boolean",
+              "default": false,
+              "description": "If false (default), timeout failures immediately fire circuit breaker without retry. If true, timeout failures are retried up to max_attempts."
+            }
+          },
+          "additionalProperties": false
+        },
+        "output_log_file": {
+          "type": "string",
+          "description": "Optional. File path where stdout/stderr should be redirected (e.g., '{trace_id}_build.log'). Prevents context-buffer overflow. Agent should read only tail-50 after completion."
+        }
+      }
+    },
+    "SkillInvokeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id",
+        "status",
+        "summary",
+        "artifacts",
+        "next_actions",
+        "risk_flags"
+      ],
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "pattern": "^TRACE-[A-Z0-9-]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "partial",
+            "failed",
+            "timeout"
+          ],
+          "description": "'timeout' indicates the operation was killed by the timeout_seconds limit — circuit breaker logic applies."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 3
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Actual elapsed execution time. Used by A00 to audit against timeout_seconds budget."
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "File paths or URIs to generated artifacts. Must be referenced in GlobalState.artifacts_map."
+        },
+        "next_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Any observed risks, warnings, or partial failures that did not block completion but warrant A00's attention."
+        },
+        "log_tail": {
+          "type": "string",
+          "description": "Last 50 lines of the operation log (if output_log_file was used). Inlined for agent context without overflowing."
+        }
+      }
+    },
+    "HandoffEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "reason",
+        "context",
+        "blocking_issues",
+        "expected_decision"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "pattern": "^A[0-9]{2}$",
+          "description": "The agent sending this handoff."
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^(A[0-9]{2}|User|End)$",
+          "description": "Target agent, 'User' for HITL escalation, or 'End' for lifecycle termination."
+        },
+        "trace_id": {
+          "type": "string",
+          "pattern": "^TRACE-[A-Z0-9-]+$",
+          "description": "Must match GlobalState.trace_id. Required for distributed tracing continuity."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 5,
+          "description": "Human-readable reason for the handoff (e.g., 'Backend task cards ready for quality gate', 'TIMEOUT: npm build exceeded 180s limit')."
+        },
+        "handoff_type": {
+          "type": "string",
+          "enum": [
+            "normal_completion",
+            "gate_pass",
+            "gate_fail",
+            "circuit_breaker",
+            "hitl_request",
+            "conflict_resolution",
+            "reflexion_retry"
+          ],
+          "description": "Categorizes why this handoff is occurring. Enables A00 to apply correct routing logic automatically."
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Structured context relevant to the target agent. Include artifact paths, task IDs, relevant error details."
+        },
+        "blocking_issues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of explicit blockers preventing progress. REQUIRED non-empty when handoff_type is 'circuit_breaker', 'gate_fail', or 'hitl_request'."
+        },
+        "patch_strategy": {
+          "type": "string",
+          "description": "MetaGPT-style reflexion: when circuit_breaker or reflexion_retry, this field MUST describe root cause + proposed fix before the implementer agent retries."
+        },
+        "expected_decision": {
+          "type": "string",
+          "minLength": 3,
+          "description": "What decision or action the target agent is expected to make (e.g., 'approve_and_route_to_implementation', 'fix_rate_limit_vulnerability', 'confirm_deployment')."
+        },
+        "state_patch": {
+          "type": "object",
+          "description": "LangGraph-style reducer patch: partial GlobalState fields this agent wants to mutate (e.g., artifacts_map updates). A00 applies after reviewing.",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

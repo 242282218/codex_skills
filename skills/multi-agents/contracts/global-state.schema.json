@@ -1,0 +1,262 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://codex.local/schemas/global-state.schema.json",
+    "title": "GlobalState",
+    "description": "The centralized state memory for the entire Multi-Agent execution lifecycle, inspired by LangGraph's TypedDict State. Includes execution_limits for anti-hang circuit breaker enforcement.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "trace_id",
+        "status",
+        "current_stage",
+        "active_agents",
+        "artifacts_map",
+        "routing_history",
+        "errors",
+        "execution_limits"
+    ],
+    "properties": {
+        "trace_id": {
+            "type": "string",
+            "description": "Unique UUID for the current execution trace.",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "running",
+                "paused_for_human",
+                "blocked",
+                "completed",
+                "failed"
+            ],
+            "description": "Global execution status. 'blocked' means a circuit breaker fired or artifacts are missing. 'paused_for_human' means HITL gate is active — all autonomous execution halts."
+        },
+        "current_stage": {
+            "type": "string",
+            "enum": [
+                "intake",
+                "scoping",
+                "architecture",
+                "implementation",
+                "quality_security",
+                "delivery_planning",
+                "review_gate",
+                "knowledge_close"
+            ],
+            "description": "The macro-stage the system is currently in. Only A00 (Supervisor) is allowed to mutate this field."
+        },
+        "active_agents": {
+            "type": "array",
+            "description": "Agents currently holding the execution token.",
+            "items": {
+                "type": "string",
+                "pattern": "^A[0-9]{2}$"
+            }
+        },
+        "artifacts_map": {
+            "type": "object",
+            "description": "Pointer references (file paths or URIs) to all strictly typed JSON/YAML artifacts generated across the lifecycle. All keys are nullable — null indicates the artifact has not yet been produced.",
+            "properties": {
+                "prd": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to PRD document produced by A01. Required before architecture gate."
+                },
+                "api_spec": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to OpenAPI/GraphQL spec produced by A02. Required before implementation."
+                },
+                "db_schema": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to DB schema/ERD produced by A02 + A05. Required before implementation."
+                },
+                "backend_plan": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to backend task cards / source code produced by A03."
+                },
+                "frontend_plan": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to frontend task cards / component map produced by A04."
+                },
+                "test_plan": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to test strategy matrix produced by A06. Required before security gate."
+                },
+                "security_report": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to security findings report produced by A07. Required before delivery gate."
+                },
+                "devops_configs": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to CI/CD YAML + Dockerfile configs produced by A08. Required before review gate."
+                },
+                "observability_plan": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to SLI/SLO + alerting plan produced by A09. Required before knowledge_close."
+                },
+                "code_review_report": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Path to code review report produced by A10. Required before knowledge_close."
+                }
+            },
+            "additionalProperties": true
+        },
+        "routing_history": {
+            "type": "array",
+            "description": "Chronological log of agent transitions.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "from",
+                    "to",
+                    "timestamp",
+                    "reason"
+                ],
+                "properties": {
+                    "from": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "string"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "errors": {
+            "type": "array",
+            "description": "Track all blocking errors, timeout events, and circuit breaker triggers causing route-backs or failures.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "agent",
+                    "error_message",
+                    "severity"
+                ],
+                "properties": {
+                    "agent": {
+                        "type": "string"
+                    },
+                    "error_code": {
+                        "type": "string",
+                        "enum": [
+                            "TIMEOUT",
+                            "CIRCUIT_BREAKER",
+                            "MISSING_ARTIFACT",
+                            "GATE_FAILURE",
+                            "SCHEMA_VIOLATION",
+                            "HITL_REJECTED",
+                            "GENERAL"
+                        ],
+                        "description": "Machine-readable error classification for automated routing decisions."
+                    },
+                    "error_message": {
+                        "type": "string"
+                    },
+                    "severity": {
+                        "type": "string",
+                        "enum": [
+                            "P0",
+                            "P1",
+                            "P2",
+                            "P3"
+                        ]
+                    },
+                    "patch_strategy": {
+                        "type": "string",
+                        "description": "The reflexion strategy proposed to fix the error. REQUIRED when severity is P0 or P1. Must describe root cause + exact fix approach before code is rewritten."
+                    },
+                    "retry_count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3,
+                        "description": "How many times this operation has been attempted. When retry_count reaches 3, circuit breaker fires permanently for this operation."
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "ISO 8601 timestamp when the error was recorded."
+                    }
+                }
+            }
+        },
+        "execution_limits": {
+            "type": "object",
+            "description": "Circuit breaker and execution budget configuration. Enforced by A00 Supervisor to prevent runaway loops and terminal hangs.",
+            "required": [
+                "max_agent_steps",
+                "max_retries_per_operation",
+                "global_timeout_seconds"
+            ],
+            "properties": {
+                "max_agent_steps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 50,
+                    "description": "Maximum total SOP steps across all agents before A00 halts the trace and escalates to User. Inspired by LangGraph's recursion_limit."
+                },
+                "max_retries_per_operation": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 3,
+                    "default": 3,
+                    "description": "Maximum retry attempts for any single terminal command or skill invocation. On breach, circuit breaker fires. Backoff: 2s → 4s → STOP."
+                },
+                "global_timeout_seconds": {
+                    "type": "integer",
+                    "minimum": 60,
+                    "default": 3600,
+                    "description": "Maximum wall-clock seconds for the entire trace execution before A00 auto-fails the run."
+                },
+                "agent_step_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0,
+                    "description": "Current count of completed agent SOP steps. Incremented by A00 on each handoff. Read-only for implementation agents."
+                },
+                "trace_started_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp when the trace was initialized. Used to compute wall-clock elapsed time."
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

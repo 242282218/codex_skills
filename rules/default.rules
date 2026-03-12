@@ -1,21 +1,38 @@
-﻿# Default project rules for Codex
-
-1) Entry point
-- Read `AGENTS.md` first.
-- Then read `./.codex/core/AGENT.md`, `./.codex/core/RULES.md`, and `./.codex/core/CONVENTIONS.md`.
-
-2) Project structure
-- Keep project framework files under `./.codex/`:
-  - `./.codex/core`
-  - `./.codex/skills`
-  - `./.codex/snippets`
-  - `./.codex/templates`
-
-3) Skills scope
-- Source skills live in `./.codex/skills`.
-- Installed runtime skills live in `%USERPROFILE%\\.codex\\skills`.
-
-4) Execution discipline
-- Propose a plan before implementation.
-- Execute in small steps and verify each step.
-- If blocked, switch strategy and continue.
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "$targets = @('.next','dist','out','node_modules','tsconfig.tsbuildinfo','.trae','dispatches','必要文件.txt'); foreach ($target in $targets) { if (Test-Path $target) { Remove-Item -Recurse -Force $target } }; git status --short"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "$results = @(); foreach ($target in @('.trae','tsconfig.tsbuildinfo','必要文件.txt')) { try { if (Test-Path $target) { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop; $results += \"OK $target\" } else { $results += \"MISSING $target\" } } catch { $results += \"FAIL $target :: $($_.Exception.Message)\" } }; $results -join \"`n\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "$nodeIds = @(Get-Process node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id); if ($nodeIds.Count -gt 0) { Stop-Process -Id $nodeIds -Force -ErrorAction Stop }; $targets = @('.next','dist','out','node_modules','.trae','tsconfig.tsbuildinfo','必要文件.txt'); $results = @(); foreach ($target in $targets) { try { if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop; $results += \"REMOVED $target\" } else { $results += \"MISSING $target\" } } catch { $results += \"FAIL $target :: $($_.Exception.Message)\" } }; $remain = foreach ($target in $targets) { [pscustomobject]@{ Target = $target; Exists = Test-Path -LiteralPath $target } }; \"STOPPED: \" + (($nodeIds | ForEach-Object { $_.ToString() }) -join ',') + \"`n\" + ($results -join \"`n\") + \"`nREMAIN:`n\" + (($remain | Format-Table -HideTableHeaders | Out-String).Trim()) + \"`nSTATUS:`n\" + ((git status --short -- app lib .github Dockerfile .dockerignore DOCKER.md middleware.ts package.json package-lock.json eslint.config.mjs __tests__ next.config.mjs 2>$null) -join \"`n\")"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git rm -r --cached -- .next out content/posts/.vitepress/.temp content/posts/.vitepress/cache content/posts/.vitepress/dist dispatches tsconfig.tsbuildinfo"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add .gitignore"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"chore(repo): stop tracking local build artifacts\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git push origin master:main"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git branch --set-upstream-to=origin/main master"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow docker-deploy.yml -L 3 --json databaseId,status,conclusion,createdAt,displayTitle,headBranch,headSha"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh api -H \"Accept: application/vnd.github+json\" /users/242282218/packages/container/blog-nevigation/versions?per_page=5"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run view 22787951348 --json databaseId,status,conclusion,createdAt,updatedAt,headSha,displayTitle,url,jobs"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run view 22787951348 --log | Select-String -Pattern \"ghcr.io/242282218/blog-nevigation\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "if (Test-Path app/hooks/useLocalArticles.bak.ts) { Remove-Item app/hooks/useLocalArticles.bak.ts -Force }"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "Remove-Item app/hooks/useLocalArticles.bak.ts -Force"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add Dockerfile docker-compose.yml app/navigation/page.tsx app/hooks/useLocalArticles.ts app/hooks/useNavigationData.ts app/api/data/articles/route.ts app/api/data/navigation/route.ts lib/editor-data-storage.ts"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"feat(storage): persist editor data under /root/blog-nevigation\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow docker-deploy.yml -L 1 --json databaseId,status,conclusion,headSha,createdAt,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add app/api/data/backup/route.ts app/editor/page.tsx"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"feat(editor): support backup and restore in editor home\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow docker-deploy.yml -L 1 --json databaseId,status,conclusion,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow deploy.yml -L 1 --json databaseId,status,conclusion,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add app/editor/blog/page.tsx"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"feat(editor): export all blog articles from editor\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list -L 5 --json databaseId,status,conclusion,createdAt,displayTitle,workflowName,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list -L 3 --json databaseId,status,conclusion,createdAt,displayTitle,workflowName,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow docker-deploy.yml -L 5 --json databaseId,status,conclusion,createdAt,displayTitle,headBranch,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "docker manifest inspect ghcr.io/242282218/blog-nevigation:latest"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run view 22791202100 --json databaseId,status,conclusion,createdAt,updatedAt,headSha,displayTitle,url,jobs"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run view 22791202100 --log | Select-String -Pattern \"ERROR|error|failed|Failed|ENOENT|TS|Next|npm|digest|push\" -CaseSensitive:$false"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh workflow run docker-deploy.yml --ref master"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run rerun 22791202100"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add app/api/editor-auth/route.ts app/editor/components/LogoutButton.tsx app/editor/login/EditorLoginForm.tsx app/editor/login/page.tsx lib/editor-auth.ts lib/frontmatter.ts lib/navigation-data.ts middleware.ts"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "Remove-Item __tests__/editor-build-files.test.ts,__tests__/editor-build-files.node.test.mjs,scripts/check-editor-build-files.ps1 -Force"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"fix(editor): add missing auth and parser files for remote build\""], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run list --workflow docker-deploy.yml -L 3 --json databaseId,status,conclusion,createdAt,displayTitle,headBranch,headSha,url"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "gh run view 22804366794 --log | Select-String -Pattern \"ERROR|error|failed|Failed|ENOENT|TS|Next|npm|digest|push|Module not found|Type error\" -CaseSensitive:$false"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git add app/editor/page.tsx"], decision="allow")
+prefix_rule(pattern=["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "git commit -m \"fix(editor): escape legacy JSX comments on editor home\""], decision="allow")

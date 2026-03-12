@@ -1,0 +1,7 @@
+interface:
+  display_name: "隔离发布推送"
+  short_description: "上传纯净版、子目录或开源快照时，不动本地工作区，改走隔离发布目录"
+  default_prompt: "Use $isolated-git-publish to upload a clean GitHub/GitLab/Gitee snapshot, open-source subproject, isolated release directory, or force-replace remote branch without modifying my current working tree."
+
+policy:
+  allow_implicit_invocation: true

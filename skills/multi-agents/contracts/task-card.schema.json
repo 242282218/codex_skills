@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/task-card.schema.json",
+  "title": "TaskCard",
+  "description": "A typed task card dispatched by A00 Supervisor to implementation agents. Enforces timeout budgets, non-interactive execution requirements, and output artifact contracts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "owner_agent",
+    "stage",
+    "goal",
+    "input_refs",
+    "output_schema",
+    "acceptance_tests",
+    "priority",
+    "timeout_seconds",
+    "require_non_interactive"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "pattern": "^TASK-[A-Z0-9-]+$",
+      "description": "Unique task identifier (e.g., TASK-API-AUTH). Used for routing, logging, and deduplication."
+    },
+    "owner_agent": {
+      "type": "string",
+      "pattern": "^A[0-9]{2}$",
+      "description": "The agent responsible for executing this task."
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^TRACE-[A-Z0-9-]+$",
+      "description": "Must match GlobalState.trace_id. Enables distributed tracing continuity across all generated artifacts."
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "intake",
+        "scoping",
+        "architecture",
+        "implementation",
+        "quality_security",
+        "delivery_planning",
+        "review_gate",
+        "knowledge_close"
+      ],
+      "description": "Must match the stage values used in GlobalState.current_stage."
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Clear, unambiguous task objective. Must specify what artifact must be produced."
+    },
+    "input_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "File paths or artifact URIs the agent must read before starting. Agent MUST verify these exist before executing SOP."
+    },
+    "output_schema": {
+      "type": "string",
+      "description": "Reference to the JSON Schema or artifact type expected as output (e.g., 'contracts/agent-spec.schema.json', 'OpenAPI 3.0 YAML')."
+    },
+    "acceptance_tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "description": "Explicit, testable conditions that must be true before the agent can submit a HandoffEnvelope. All must be verifiable without human intervention."
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "description": "P0: Execute immediately, block all else. P1: Execute in current stage. P2: Schedule within iteration. P3: Advisory."
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 600,
+      "description": "REQUIRED. Maximum allowed wall-clock time for this task's execution. Per-category defaults: install=120, build=180, test=300, migrate=60, scan=90, probe=30. Agent MUST set a timer and emit HandoffEnvelope(handoff_type='circuit_breaker') on breach."
+    },
+    "require_non_interactive": {
+      "type": "boolean",
+      "default": true,
+      "description": "REQUIRED. When true, all terminal commands executed for this task MUST include non-interactive flags (--yes, -y, --no-input, CI=true, etc.)."
+    },
+    "output_log_file": {
+      "type": "string",
+      "description": "Optional. Named log file pattern for redirecting CLI stdout/stderr (e.g., '{trace_id}_{task_id}.log'). Agent reads only tail-50 to prevent context overflow."
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional ISO 8601 absolute deadline. If present and exceeded, A00 may deprioritize or escalate to User."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional unstructured metadata (e.g., related PRD section, architectural decision references)."
+    }
+  }
+}
